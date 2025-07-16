@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Provider, useSelector } from 'react-redux';
-import { SafeAreaView, StatusBar, StyleSheet, Text, View, TouchableOpacity, Alert } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { store, RootState } from './src/store';
 import { RegisterScreen } from './src/screens/auth/RegisterScreen';
 import { LoginScreen } from './src/screens/auth/LoginScreen';
@@ -10,7 +10,7 @@ type Screen = 'welcome' | 'login' | 'register' | 'home';
 
 function AuthTestApp(): React.JSX.Element {
   const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
-  const { user, isAuthenticated, isLoading, error } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated, error } = useSelector((state: RootState) => state.auth);
 
   // Simple navigation object for our auth screens
   const navigation = {

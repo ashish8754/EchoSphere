@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { User, AuthError, LoginCredentials, RegisterCredentials } from '../../types';
+import { User, AuthError, LoginCredentials, RegisterCredentials, AuthToken } from '../../types';
 
 interface AuthState {
   user: User | null;
@@ -8,6 +8,8 @@ interface AuthState {
   boostModeEnabled: boolean;
   subscriptionTier: 'free' | 'premium';
   error: AuthError | null;
+  sessionToken: AuthToken | null;
+  tokenRefreshInProgress: boolean;
 }
 
 const initialState: AuthState = {
@@ -17,6 +19,8 @@ const initialState: AuthState = {
   boostModeEnabled: false,
   subscriptionTier: 'free',
   error: null,
+  sessionToken: null,
+  tokenRefreshInProgress: false,
 };
 
 // Async thunks for authentication actions
