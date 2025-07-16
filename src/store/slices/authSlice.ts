@@ -24,8 +24,9 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      // This will be implemented when we create the actual auth service
-      throw new Error('Auth service not implemented yet');
+      const { authService } = await import('../../services/supabaseAuthService');
+      const authToken = await authService.login(credentials);
+      return authToken.user;
     } catch (error: any) {
       return rejectWithValue({
         message: error.message || 'Login failed',

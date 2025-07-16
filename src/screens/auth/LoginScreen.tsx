@@ -13,23 +13,20 @@ import {
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
-import { authService } from '../../services/supabaseAuthService';
+import { loginUser } from '../../store/slices/authSlice';
 import { AuthValidation } from '../../services/authService';
-import { setUser, setLoading, setError } from '../../store/slices/authSlice';
 
-interface RegisterScreenProps {
+interface LoginScreenProps {
   navigation: any; // We'll type this properly when we add navigation
 }
 
-export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const dispatch = useDispatch();
   const { isLoading, error } = useSelector((state: RootState) => state.auth);
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    displayName: '',
   });
 
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -44,79 +41,50 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     }
 
     // Password validation
-    const passwordValidation = AuthValidation.validatePassword(formData.password);
-    if (!passwordValidation.isValid) {
-      errors.push(...passwordValidation.errors);
-    }
-
-    // Confirm password
-    if (formData.password !== formData.confirmPassword) {
-      errors.push('Passwords do not match');
-    }
-
-    // Display name validation
-    if (!AuthValidation.validateDisplayName(formData.displayName)) {
-      errors.push('Display name must be between 2 and 50 characters');
+    if (!formData.password || formData.password.length < 1) {
+      errors.push('Password is required');
     }
 
     setValidationErrors(errors);
     return errors.length === 0;
   };
 
-  const handleRegister = async () => {
+  const handleLogin = async () => {
     if (!validateForm()) {
       return;
     }
 
-    dispatch(setLoading(true));
-    dispatch(setError(null));
-
     try {
-      const result = await authService.register({
+      const result = await dispatch(loginUser({
         email: formData.email,
         password: formData.password,
-        display_name: formData.displayName,
-      });
+      })).unwrap();
 
-      dispatch(setUser(result.user));
-
-      if (result.needsVerification) {
-        Alert.alert(
-          'Registration Successful',
-          'Please check your email to verify your account before signing in.',
-          [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('EmailVerification', { email: formData.email }),
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Registration Successful', 'Welcome to EchoSphere!');
-      }
-    } catch (registrationError: any) {
-      dispatch(setError({
-        message: registrationError.message || 'Registration failed',
-        code: registrationError.code,
-        status: registrationError.status,
-      }));
-    } finally {
-      dispatch(setLoading(false));
+      // Login successful - navigation will be handled by auth state change
+      Alert.alert('Welcome Back!', `Hello ${result.display_name}!`);
+    } catch (loginError: any) {
+      // Error is already handled by Redux, but we can show additional UI feedback
+      console.error('Login failed:', loginError);
     }
   };
 
-  const handleResendVerification = async () => {
-    if (!AuthValidation.validateEmail(formData.email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+  const handleForgotPassword = () => {
+    if (!formData.email) {
+      Alert.alert('Email Required', 'Please enter your email address first.');
       return;
     }
 
-    try {
-      await authService.resendVerification(formData.email);
-      Alert.alert('Success', 'Verification email sent! Please check your inbox.');
-    } catch (resendError: any) {
-      Alert.alert('Error', resendError.message || 'Failed to resend verification email');
+    if (!AuthValidation.validateEmail(formData.email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
     }
+
+    // Navigate to forgot password screen or show modal
+    Alert.alert(
+      'Reset Password',
+      'Password reset functionality will be implemented in the next task.',
+      [{ text: 'OK' }]
+    );
   };
 
   return (
@@ -126,24 +94,11 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.header}>
-          <Text style={styles.title}>Join EchoSphere</Text>
-          <Text style={styles.subtitle}>Create your account for authentic connections</Text>
+          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.subtitle}>Sign in to your EchoSphere account</Text>
         </View>
 
         <View style={styles.form}>
-          {/* Display Name Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Display Name</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.displayName}
-              onChangeText={(text) => setFormData({ ...formData, displayName: text })}
-              placeholder="Enter your display name"
-              autoCapitalize="words"
-              maxLength={50}
-            />
-          </View>
-
           {/* Email Input */}
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
@@ -155,6 +110,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
+              autoFocus
             />
           </View>
 
@@ -169,6 +125,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
                 placeholder="Enter your password"
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoComplete="password"
               />
               <TouchableOpacity
                 style={styles.passwordToggle}
@@ -179,19 +136,6 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.confirmPassword}
-              onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
-              placeholder="Confirm your password"
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-            />
           </View>
 
           {/* Validation Errors */}
@@ -212,31 +156,31 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             </View>
           )}
 
-          {/* Register Button */}
+          {/* Login Button */}
           <TouchableOpacity
-            style={[styles.registerButton, isLoading && styles.disabledButton]}
-            onPress={handleRegister}
+            style={[styles.loginButton, isLoading && styles.disabledButton]}
+            onPress={handleLogin}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text style={styles.registerButtonText}>Create Account</Text>
+              <Text style={styles.loginButtonText}>Sign In</Text>
             )}
           </TouchableOpacity>
 
-          {/* Resend Verification */}
-          <TouchableOpacity style={styles.resendButton} onPress={handleResendVerification}>
-            <Text style={styles.resendButtonText}>Resend Verification Email</Text>
+          {/* Forgot Password */}
+          <TouchableOpacity style={styles.forgotPasswordButton} onPress={handleForgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
 
-          {/* Login Link */}
+          {/* Register Link */}
           <TouchableOpacity
-            style={styles.loginLink}
-            onPress={() => navigation.navigate('Login')}
+            style={styles.registerLink}
+            onPress={() => navigation.navigate('Register')}
           >
-            <Text style={styles.loginLinkText}>
-              Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text>
+            <Text style={styles.registerLinkText}>
+              Don't have an account? <Text style={styles.registerLinkBold}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -326,7 +270,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  registerButton: {
+  loginButton: {
     backgroundColor: '#007AFF',
     borderRadius: 8,
     paddingVertical: 16,
@@ -336,28 +280,28 @@ const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#cccccc',
   },
-  registerButtonText: {
+  loginButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
-  resendButton: {
+  forgotPasswordButton: {
     alignItems: 'center',
     marginBottom: 24,
   },
-  resendButtonText: {
+  forgotPasswordText: {
     color: '#007AFF',
     fontSize: 14,
     fontWeight: '500',
   },
-  loginLink: {
+  registerLink: {
     alignItems: 'center',
   },
-  loginLinkText: {
+  registerLinkText: {
     color: '#666666',
     fontSize: 14,
   },
-  loginLinkBold: {
+  registerLinkBold: {
     color: '#007AFF',
     fontWeight: '600',
   },

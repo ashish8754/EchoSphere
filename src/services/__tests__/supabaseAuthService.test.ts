@@ -7,13 +7,21 @@ jest.mock('../supabase', () => ({
   supabase: {
     auth: {
       signUp: jest.fn(),
+      signInWithPassword: jest.fn(),
+      signOut: jest.fn(),
       verifyOtp: jest.fn(),
       resend: jest.fn(),
+      refreshSession: jest.fn(),
+      getUser: jest.fn(),
+      getSession: jest.fn(),
+      onAuthStateChange: jest.fn(),
     },
     from: jest.fn(() => ({
       insert: jest.fn().mockReturnThis(),
       update: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockReturnThis(),
     })),
   },
 }));
@@ -200,16 +208,236 @@ describe('SupabaseAuthService', () => {
     });
   });
 
+  describe('login', () => {
+    const validCredentials = {
+      email: 'test@example.com',
+      password: 'StrongPass123',
+    };
+
+    it('should login user successfully', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+        email_confirmed_at: '2024-01-01T00:00:00Z',
+      };
+
+      const mockSession = {
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600,
+        token_type: 'bearer',
+      };
+
+      const mockUserProfile = {
+        id: 'user-123',
+        email: 'test@example.com',
+        display_name: 'Test User',
+        boost_mode_enabled: false,
+        subscription_tier: 'free',
+        email_verified: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: { user: mockUser, session: mockSession },
+        error: null,
+      });
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockUserProfile, error: null }),
+      } as any);
+
+      const result = await service.login(validCredentials);
+
+      expect(result.user.email).toBe('test@example.com');
+      expect(result.user.display_name).toBe('Test User');
+      expect(result.access_token).toBe('access-token');
+      expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'StrongPass123',
+      });
+    });
+
+    it('should throw error for invalid email', async () => {
+      const invalidCredentials = {
+        ...validCredentials,
+        email: 'invalid-email',
+      };
+
+      await expect(service.login(invalidCredentials)).rejects.toThrow(
+        'Invalid email format'
+      );
+    });
+
+    it('should throw error for empty password', async () => {
+      const emptyPasswordCredentials = {
+        ...validCredentials,
+        password: '',
+      };
+
+      await expect(service.login(emptyPasswordCredentials)).rejects.toThrow(
+        'Password is required'
+      );
+    });
+
+    it('should handle Supabase auth errors', async () => {
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: { user: null, session: null },
+        error: { message: 'Invalid credentials', code: 'invalid_credentials' },
+      });
+
+      await expect(service.login(validCredentials)).rejects.toThrow(
+        AuthServiceError
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('should logout successfully', async () => {
+      mockSupabase.auth.signOut.mockResolvedValue({
+        error: null,
+      });
+
+      await expect(service.logout()).resolves.not.toThrow();
+      expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+    });
+
+    it('should handle logout errors', async () => {
+      mockSupabase.auth.signOut.mockResolvedValue({
+        error: { message: 'Logout failed', code: 'logout_error' },
+      });
+
+      await expect(service.logout()).rejects.toThrow(AuthServiceError);
+    });
+  });
+
+  describe('getCurrentUser', () => {
+    it('should get current user successfully', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+      };
+
+      const mockUserProfile = {
+        id: 'user-123',
+        email: 'test@example.com',
+        display_name: 'Test User',
+        boost_mode_enabled: false,
+        subscription_tier: 'free',
+        email_verified: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null,
+      });
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockUserProfile, error: null }),
+      } as any);
+
+      const result = await service.getCurrentUser();
+
+      expect(result?.email).toBe('test@example.com');
+      expect(result?.display_name).toBe('Test User');
+    });
+
+    it('should return null when no user is logged in', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: null,
+      });
+
+      const result = await service.getCurrentUser();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('getSession', () => {
+    it('should get current session successfully', async () => {
+      const mockUser = {
+        id: 'user-123',
+        email: 'test@example.com',
+      };
+
+      const mockSession = {
+        access_token: 'access-token',
+        refresh_token: 'refresh-token',
+        expires_in: 3600,
+        token_type: 'bearer',
+        user: mockUser,
+      };
+
+      const mockUserProfile = {
+        id: 'user-123',
+        email: 'test@example.com',
+        display_name: 'Test User',
+        boost_mode_enabled: false,
+        subscription_tier: 'free',
+        email_verified: true,
+        created_at: '2024-01-01T00:00:00Z',
+        updated_at: '2024-01-01T00:00:00Z',
+      };
+
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: mockSession },
+        error: null,
+      });
+
+      mockSupabase.from.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: mockUserProfile, error: null }),
+      } as any);
+
+      const result = await service.getSession();
+
+      expect(result?.access_token).toBe('access-token');
+      expect(result?.user.email).toBe('test@example.com');
+    });
+
+    it('should return null when no session exists', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      const result = await service.getSession();
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('onAuthStateChange', () => {
+    it('should set up auth state change listener', () => {
+      const mockCallback = jest.fn();
+      const mockUnsubscribe = jest.fn();
+
+      mockSupabase.auth.onAuthStateChange.mockReturnValue({
+        data: { subscription: { unsubscribe: mockUnsubscribe } },
+      });
+
+      const unsubscribe = service.onAuthStateChange(mockCallback);
+
+      expect(mockSupabase.auth.onAuthStateChange).toHaveBeenCalled();
+      expect(typeof unsubscribe).toBe('function');
+
+      // Test unsubscribe
+      unsubscribe();
+      expect(mockUnsubscribe).toHaveBeenCalled();
+    });
+  });
+
   describe('placeholder methods', () => {
-    it('should throw not implemented errors for placeholder methods', async () => {
-      await expect(service.login({ email: 'test@example.com', password: 'password' })).rejects.toThrow('Login not implemented yet');
-      await expect(service.logout()).rejects.toThrow('Logout not implemented yet');
-      await expect(service.refreshToken()).rejects.toThrow('Refresh token not implemented yet');
+    it('should throw not implemented errors for remaining placeholder methods', async () => {
       await expect(service.resetPassword({ email: 'test@example.com' })).rejects.toThrow('Reset password not implemented yet');
       await expect(service.updatePassword('newpass')).rejects.toThrow('Update password not implemented yet');
-      await expect(service.getCurrentUser()).rejects.toThrow('Get current user not implemented yet');
-      await expect(service.getSession()).rejects.toThrow('Get session not implemented yet');
-      expect(() => service.onAuthStateChange(() => {})).toThrow('Auth state change not implemented yet');
       await expect(service.updateProfile({})).rejects.toThrow('Update profile not implemented yet');
       await expect(service.uploadProfilePicture('uri')).rejects.toThrow('Upload profile picture not implemented yet');
       await expect(service.deleteAccount()).rejects.toThrow('Delete account not implemented yet');
