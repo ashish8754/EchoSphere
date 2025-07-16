@@ -1,97 +1,105 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# EchoSphere
 
-# Getting Started
+**Real connections, amplified on demand**
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+EchoSphere is a hybrid social media application that combines authentic, no-nonsense sharing with optional AI-driven "Boost Mode" features. The app prioritizes genuine life updates in a chronological, pressure-free environment while allowing users to opt into enhanced features for deeper engagement.
 
-## Step 1: Start Metro
+## Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### Authentic Base Experience
+- Chronological feeds without algorithmic manipulation
+- Private circles for targeted sharing
+- No likes or vanity metrics - focus on genuine connections
+- Clean, distraction-free interface
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Boost Mode (Optional)
+- AI-powered content suggestions
+- Semantic feedback and emotion-based interactions
+- Gamification elements for enhanced engagement
+- Personalized content grouping
 
-```sh
-# Using npm
+## Tech Stack
+
+- **Frontend**: React Native with TypeScript
+- **State Management**: Redux Toolkit
+- **Backend**: Supabase (Database, Auth, Storage)
+- **AI Integration**: OpenAI API
+- **Payments**: Stripe
+- **Testing**: Jest, Detox
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (>=18)
+- React Native development environment
+- iOS Simulator or Android Emulator
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your actual API keys
+   ```
+
+4. For iOS, install CocoaPods:
+   ```bash
+   cd ios && bundle install && bundle exec pod install && cd ..
+   ```
+
+### Running the App
+
+```bash
+# Start Metro bundler
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
-```
-
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+# Run on iOS
 npm run ios
 
-# OR using Yarn
-yarn ios
+# Run on Android  
+npm run android
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Testing
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+# Run unit tests
+npm test
 
-## Step 3: Modify your app
+# Run linting
+npm run lint
+```
 
-Now that you have successfully run the app, let's make changes!
+## Project Structure
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```
+src/
+├── components/     # Reusable UI components
+├── screens/        # Screen components
+├── services/       # API and external service integrations
+├── store/          # Redux store and slices
+├── types/          # TypeScript type definitions
+└── utils/          # Utility functions and helpers
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Development
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+This project follows the implementation plan outlined in `.kiro/specs/authenti-boost/tasks.md`. Each task builds incrementally on the previous ones, ensuring a solid foundation and test coverage.
 
-## Congratulations! :tada:
+## Contributing
 
-You've successfully run and modified your React Native App. :partying_face:
+1. Follow the existing code style and patterns
+2. Write tests for new features
+3. Update documentation as needed
+4. Ensure all tests pass before submitting
 
-### Now what?
+## License
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Private project - All rights reserved.
